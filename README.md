@@ -11,15 +11,9 @@ A proof of concept of a RNA-Seq pipeline. Here we are combining three technologi
 
 Each of these components plays a slightly different and equally important role. Without Nextflow, we could generate a reproducible pipeline with modular, discoverable entry points to the container, but we would need to execute the commands manually. See an [example here](https://github.com/vsoch/carrierseq/blob/master/docs/docker.scif.md#carrierseq-pipeline). Without SCIF, we could have the same container with commands to execute known software inside, but the container would largely remain a black box with software mixed amongst the base operating system. If you found it after the fact, it would be a mystery. Without Singularity you could use a Docker container or install software on your host, but (as we all know) this would likely not be a portable solution. I might say that these three technologies...
 
-Scientific Filesystem :blue_heart: Docker :blue_heart: Nextflow
+Scientific Filesystem :blue_heart: Containers :blue_heart: Nextflow
 
-and if you don't need to run on a shared resource? Then we have this:
-
-Scientific Filesystem :blue_heart: Singularity :blue_heart: Nextflow
-
-and in that Singularity uses Docker image bases, we have a much happier family:
-
-Scientific Filesystem :blue_heart: Docker :blue_heart: Singularity :blue_heart: Nextflow
+If you don't need to run on a shared resource, the Container could be Docker. If you need to, it should be Singularity.
 
 For details on the various files, keep reading. For the original source code, see the [src](src) folder for the example from [nextflow.io](https://www.github.com/nextflow.io/rnatoy). The example uses Docker and Singularity containers to run the pipeline, but without SCIF.
 
