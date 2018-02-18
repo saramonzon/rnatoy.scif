@@ -241,21 +241,28 @@ LD_LIBRARY_PATH=/scif/apps/samtools/lib
 PATH=/scif/apps/samtools/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ```
 
-Whether we are using Docker or Singularity, the actions going on internally with the scientific filesystem client are the same. Given a simple enough pipeline, we could stop here, and just issue a series of commands to run the different apps in the order we like:
+Whether we are using Docker or Singularity, the actions going on internally with the scientific filesystem client are the same. Given a simple enough pipeline, we could stop here, and just issue a series of commands to run the different apps.
 
-```
-#TODO: put order of applications here.
-```
 
 ## Run Using Docker + Scientific Filesystem
 I'm having trouble getting nextflow to work, so here is how to run the steps using just SCIF with the container. For the following steps, scif ensures that `/scif/data` exists in the container, so we can use it as a working directory with confidence.
 
 
 ### Bowtie
+Here is what we are starting with:
+
+```
+ls data/ggal
+ggal_1_48850000_49020000.bed.gff               ggal_gut_1.fq  ggal_liver_1.fq
+ggal_1_48850000_49020000.Ggal71.500bpflank.fa  ggal_gut_2.fq  ggal_liver_2.fq
+```
+
+and let's define what these paths will look like in the container. The /scif/data folder
+that we know to exist with scif we will map to "data" in the present working directory.
 
 ```
 genome=/scif/data/ggal_1_48850000_49020000.Ggal71.500bpflank.fa
-genomeIndex=/scif/data/ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index
+genomeIndex=${genome}.index
 
 docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec bowtie bowtie2-build --threads 1 $genome $genomeIndex
 ```
@@ -276,14 +283,25 @@ ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index.2.bt2  ggal_1_48850000_49020
 ```
 
 ### Tophat
-Now let's do the next step, and we will do the same sort of deal.
-
+Now let's do the next step, and we will do the same sort of deal. Note I'm not sure if I am executing this correctly, I've never used tophat.
 
 ```
-reads=/scif/data/*_{1,2}.fq
+reads="/scif/data/ggal_gut_1.fq /scif/data/ggal_gut_2.fq /scif/data/ggal_liver_1.fq /scif/data/ggal_liver_2.fq"
 annot=/scif/data/ggal_1_48850000_49020000.bed.gff
+
 docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec tophat tophat2 -p 1 --GTF $annot $genomeIndex $reads
 ```
+
+### Cufflinks
+
+Finally, this one!
+
+```
+bam_file=/scif/data/ggal_1_48850000_49020000.bed.gff
+docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec cufflinks cufflinks --no-update-check -q -p 1 -G $annot $bam_file
+```
+
+I don't think that was right, but I can't spend more time on this! Note that the rest of this description is wrong, I can't figure out for the life of me how Nextflow works. I'm going to try other workflow managers instead.
 
 
 # Nextflow

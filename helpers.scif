@@ -1,7 +1,7 @@
 %apprun nextflow-singularity-config
     cat ${SCIF_APPROOT}/nextflow-singularity.config
 %appfiles nextflow-singularity-config
-    nextflow-singularity.config
+    /nextflow-singularity.config
 %apphelp nextflow-singularity-config
     Run this application to get the nextflow.config recipe printed to the screen
     for running the Pipeline with Nextflow and Singularity
@@ -11,7 +11,7 @@
 %apprun nextflow-docker-config
     cat ${SCIF_APPROOT}/nextflow-docker.config
 %appfiles nextflow-docker-config
-    nextflow-docker.config
+    /nextflow-docker.config
 %apphelp nextflow-docker-config
     Run this application to get the nextflow.config recipe printed to the screen
     for running the Pipeline with Nextflow and Docker
