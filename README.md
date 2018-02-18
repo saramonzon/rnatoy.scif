@@ -3,19 +3,20 @@
 [![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.24.0-brightgreen.svg?style=for-the-badge)](http://nextflow.io)
 [![scif](https://img.shields.io/badge/filesystem-scientific-green.svg?style=for-the-badge)](https://sci-f.github.io)
 
-A proof of concept of a RNA-Seq pipeline. Here we are combining three technologies to handle each of the following:
+A proof of concept of a RNA-Seq pipeline. Here we are (trying to) combine three technologies to handle each of the following:
 
- - **Workflow** is handled by Nextflow, along with reproducibility of the workflow.
  - **Reproducibility** of software is handled by Singularity
  - **Discoverability** and **Transparency** are handled by installing our software in the container via a [Scientific Filesystem](https://sci-f.github.io). SCIF also lets us install the same dependencies across container technologies.
 
-Each of these components plays a slightly different and equally important role. Without Nextflow, we could generate a reproducible pipeline with modular, discoverable entry points to the container, but we would need to execute the commands manually. See an [example here](https://github.com/vsoch/carrierseq/blob/master/docs/docker.scif.md#carrierseq-pipeline). Without SCIF, we could have the same container with commands to execute known software inside, but the container would largely remain a black box with software mixed amongst the base operating system. If you found it after the fact, it would be a mystery. Without Singularity you could use a Docker container or install software on your host, but (as we all know) this would likely not be a portable solution. I might say that these three technologies...
+and **workflow** should be handled by NextFlow, but I can't get it working.
 
-Scientific Filesystem :blue_heart: Containers :blue_heart: Nextflow
+Each of these components plays a slightly different and equally important role. Without Nextflow, we can generate a reproducible pipeline with modular, discoverable entry points to the container, and execute the commands manually without a complicated configuration file. See an [example here](https://github.com/vsoch/carrierseq/blob/master/docs/docker.scif.md#carrierseq-pipeline). Without SCIF, we could have the same container with commands to execute known software inside, but the container would largely remain a black box with software mixed amongst the base operating system. If I used the Nextflow container without the Nextflow pipeline, it would be a black box. For any container with a single entrypoint and no clear way to inspect the executables intended for use inside, we have a mystery. Without Singularity you could use a Docker container or install software on your host, but (as we all know) this would likely not be a portable solution. Thus, for now, these two technologies...
 
-If you don't need to run on a shared resource, the Container could be Docker. If you need to, it should be Singularity.
+Scientific Filesystem :blue_heart: Containers
 
-Note that I haven't figured out Nextflow yet, but show the simple commands to run with a container and SCIF. For details on the various files, keep reading. For the original source code, see the [src](src) folder for the example from [nextflow.io](https://www.github.com/nextflow.io/rnatoy). The example uses Docker and Singularity containers to run the pipeline, but without SCIF.
+And I'd like to add Nextflow to that list, if it works. If you don't need to run on a shared resource, the Container could be Docker. If you need to, it should be Singularity.
+
+**Note that I haven't figured out Nextflow yet, but show the simple commands to run with a container and SCIF. For details on the various files, keep reading. For the original source code, see the [src](src) folder for the example from [nextflow.io](https://www.github.com/nextflow.io/rnatoy). The example uses Docker and Singularity containers to run the pipeline, but without SCIF.
 
 
 # Recipes
@@ -183,7 +184,7 @@ data
 The same kind of functionality exists with the python shell, `pyshell`, but you interact directly with the scif client:
 
 ```
-docker run -it vaness/rnatoy pyshell
+docker run -it vanessa/rnatoy pyshell
 Found configurations for 6 scif apps
 cufflinks
 samtools
@@ -302,6 +303,10 @@ docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec cufflinks cufflinks 
 ```
 
 I don't think that was right, but I can't spend more time on this! Note that the rest of this description is wrong, I can't figure out for the life of me how Nextflow works. I'm going to try other workflow managers instead.
+
+
+# Summary
+I'd really like this to work with Nextflow - I spent all weekend on it, and at this point it seems forceful or even extra to try and make it work. I'll leave it at that.
 
 
 # Nextflow
