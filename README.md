@@ -15,7 +15,7 @@ Scientific Filesystem :blue_heart: Containers :blue_heart: Nextflow
 
 If you don't need to run on a shared resource, the Container could be Docker. If you need to, it should be Singularity.
 
-For details on the various files, keep reading. For the original source code, see the [src](src) folder for the example from [nextflow.io](https://www.github.com/nextflow.io/rnatoy). The example uses Docker and Singularity containers to run the pipeline, but without SCIF.
+Note that I haven't figured out Nextflow yet, but show the simple commands to run with a container and SCIF. For details on the various files, keep reading. For the original source code, see the [src](src) folder for the example from [nextflow.io](https://www.github.com/nextflow.io/rnatoy). The example uses Docker and Singularity containers to run the pipeline, but without SCIF.
 
 
 # Recipes
@@ -128,9 +128,11 @@ $ ./rnatoy apps
  cufflinks
     tophat
   samtools
+nextflow-docker-config
+nextflow-singularity-config
 ```
 
-And look at an application in detail.
+The last two were installed from [helpers.scif](helpers.scif), and the first two from [rnatoy.scif](rnatoy.scif). We can look at an application in detail.
 
 ```
 $ docker run vanessa/rnatoy help samtools
@@ -154,6 +156,49 @@ $ docker run vanessa/rnatoy inspect samtools
 ```
 
 The creator of the container didn't write any complicated scripts to have this happen - the help text is just a chunk of text in a block of the recipe. The labels that are parsed to json, are also just written easily on two lines. This means that the creator can spend less time worry about exposing this. If you can write a text file, you can make your applications programatically parseable.
+
+## Interacting with Applications
+I can easily shell into the container in the context of an application, meaning that the
+environment is sourced, etc. 
+
+```
+$ docker run -it vanessa/rnatoy shell samtools
+[samtools] executing /bin/bash 
+root@d002e338b88b:/scif/apps/samtools# env | grep PATH
+LD_LIBRARY_PATH=/scif/apps/samtools/lib
+PATH=/scif/apps/samtools/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+```
+
+Notice how I'm in the app's context (in it's application folder) and that it's bin is added to the path? I can also shell in without a specific application context, but still have all the SCIF [global variables](https://sci-f.github.io/spec-v1#environment-namespace) available to me.
+
+```
+docker run -it vanessa/rnatoy shell
+WARNING No app selected, will run default ['/bin/bash']
+executing /bin/bash 
+root@055a34619d17:/scif# ls
+apps
+data
+```
+
+The same kind of functionality exists with the python shell, `pyshell`, but you interact directly with the scif client:
+
+```
+docker run -it vaness/rnatoy pyshell
+Found configurations for 6 scif apps
+cufflinks
+samtools
+bowtie
+tophat
+nextflow-docker-config
+nextflow-singularity-config
+[scif] /scif cufflinks | samtools | bowtie | tophat | nextflow-docker-config | nextflow-singularity-config
+Python 3.6.2 |Anaconda, Inc.| (default, Sep 22 2017, 02:03:08) 
+[GCC 7.2.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+(InteractiveConsole)
+client.apps()
+['cufflinks', 'samtools', 'bowtie', 'tophat', 'nextflow-docker-config', 'nextflow-singularity-config']
+```
 
 ## Running Applications
 Before we get into creating a pipeline, look how easy it is to run an application. Without scif, we would have to have known that samtools is installed, and then executed the command to the container. But with the scientific filesystem, we discovered the app (shown above) and then we can just run it. The `run` command maps to the entrypoint, as was defined by the creator:
@@ -188,11 +233,58 @@ Command: view        SAM<->BAM conversion
 [samtools] executing /bin/bash /scif/apps/samtools/scif/runscript
 ```
 
+And executing any command in the context of the application is possible too:
+
+```
+$ docker run vanessa/rnatoy exec samtools env | grep PATH
+LD_LIBRARY_PATH=/scif/apps/samtools/lib
+PATH=/scif/apps/samtools/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+```
+
 Whether we are using Docker or Singularity, the actions going on internally with the scientific filesystem client are the same. Given a simple enough pipeline, we could stop here, and just issue a series of commands to run the different apps in the order we like:
 
 ```
 #TODO: put order of applications here.
 ```
+
+## Run Using Docker + Scientific Filesystem
+I'm having trouble getting nextflow to work, so here is how to run the steps using just SCIF with the container. For the following steps, scif ensures that `/scif/data` exists in the container, so we can use it as a working directory with confidence.
+
+
+### Bowtie
+
+```
+genome=/scif/data/ggal_1_48850000_49020000.Ggal71.500bpflank.fa
+genomeIndex=/scif/data/ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index
+
+docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec bowtie bowtie2-build --threads 1 $genome $genomeIndex
+```
+
+In the above, notice that I am:
+
+ 1. defining a genome and index output to be in the /scif/data folder in the container
+ 2. which is mapped to my host $PWD/data folder that has the data files
+
+The output is verbose, but I get the result on my local machine!
+
+```
+ls data/ggal/
+ggal_1_48850000_49020000.bed.gff                           ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index.3.bt2      ggal_gut_1.fq
+ggal_1_48850000_49020000.Ggal71.500bpflank.fa              ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index.4.bt2      ggal_gut_2.fq
+ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index.1.bt2  ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index.rev.1.bt2  ggal_liver_1.fq
+ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index.2.bt2  ggal_1_48850000_49020000.Ggal71.500bpflank.fa.index.rev.2.bt2  ggal_liver_2.fq
+```
+
+### Tophat
+Now let's do the next step, and we will do the same sort of deal.
+
+
+```
+reads=/scif/data/*_{1,2}.fq
+annot=/scif/data/ggal_1_48850000_49020000.bed.gff
+docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec tophat tophat2 -p 1 --GTF $annot $genomeIndex $reads
+```
+
 
 # Nextflow
 It's commonly the case that your application has many more complicated runtime variables, or binds, and you want to be able to define these variables in one place, and then execute the workflow. You want step 2 to wait for step 1, and to not be run if there is a missing dependency. This is where Nextflow comes in! For this example, if you wanted you could install the nextflow controller on your host:
@@ -201,12 +293,13 @@ It's commonly the case that your application has many more complicated runtime v
 curl -fsSL get.nextflow.io | bash
 ```
 
-but my preference was to use a container. In this case I'm going to use Singularity so that my home (and the recipe file I'm interacting with) is mounted by default. I could just "run" this, but instead I'd prefer to pull it:
+You can also use a container! In this case I'm going to use Singularity so that my home (and the recipe file I'm interacting with) is mounted by default. I could just "run" this, but instead I'd prefer to pull it:
 
 ```
 singularity pull --name nextflow  docker://nextflow/nextflow
 ./nextflow
 ```
+Note that you need bash and Java 8 installed for this to work.
 
 ## Configuration
 Nextflow has a [configuration file](https://www.nextflow.io/docs/latest/config.html) that by default is named `nextflow.config`, and is combined with a user's "global" file in their `$HOME` directory. For this example, since we have a configuration file for each of Docker and Singularity, we are going to take advantage of defining a custom configuration file at runtime.
@@ -235,17 +328,46 @@ docker run vanessa/rnatoy help nextflow-docker-config
 Do the suggested command to save the nextflow configuration file to your `$PWD`. Note that "quiet" is added to suppress additional output, and the command below is using Docker while the help shows a general "container" executable called `rnatoy`.
 
 ```
-$ docker run vanessa/rnatoy run nextflow-docker-config >> nextflow.config
+$ docker run vanessa/rnatoy run nextflow-docker-config >> nextflow-docker.config
 ```
+
+If you were customizing the data, you would edit this configuration file now. We are going to use the defaults (data provided from S3).
+
 
 ## Run NextFlow
 Enough with configuration and recipes! Let's run this thing. Here we are going to specify the Docker configuration, and our Docker container. This is an interesting setup because our nextflow executable is a Singularity container.
 
 
 ```
-# STOPPED HERE - not sure how this works!
-./nextflow run vanessa/rnatoy -C nextflow-docker.config -with-docker
+./nextflow -C nextflow-docker.config run main.nf  -with-docker
 ```
+
+and if we specify the `docker.enabled = true` in the configuration file, we can remove that too:
+
+```
+./nextflow -C nextflow-docker.config run main.nf
+```
+
+How does it work? The line to execute just one command to bowtie, for example, would mean running the exec statement in the context of the applicaition, e.g.,:
+
+```
+docker run -it vanessa/rnatoy exec bowtie which bowtie2-build
+[bowtie] executing /usr/bin/which bowtie2-build
+/scif/apps/bowtie/bin/bowtie2-build
+```
+
+So thus, we change the running line in the [main.nf](main.nf) from:
+
+```
+bowtie2-build --threads ${task.cpus} ${genome} genome.index
+```
+
+to:
+
+```
+exec bowtie bowtie2-build --threads ${task.cpus} ${genome} genome.index
+```
+
 
 ## Additions / Notes:
 These are additional notes that I will write up in more detail.

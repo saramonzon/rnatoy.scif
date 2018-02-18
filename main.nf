@@ -23,6 +23,9 @@
  * Authors:
  * Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  * Emilio Palumbo <emiliopalumbo@gmail.com> 
+ *
+ * Tweaked by:
+ * Vanessa Sochat <vsochat@stanford.edu>
  */ 
 
  
@@ -71,9 +74,9 @@ process buildIndex {
      
     output:
     file 'genome.index*' into genome_index
-       
+    
     """
-    bowtie2-build --threads ${task.cpus} ${genome} genome.index
+    scif --quiet exec bowtie bowtie2-build --threads ${task.cpus} ${genome} genome.index
     """
 }
  
@@ -93,7 +96,7 @@ process mapping {
     set pair_id, "accepted_hits.bam" into bam
  
     """
-    tophat2 -p ${task.cpus} --GTF $annot genome.index $reads
+    scif --quiet exec tophat tophat2 -p ${task.cpus} --GTF $annot genome.index $reads
     mv tophat_out/accepted_hits.bam .
     """
 }
@@ -113,7 +116,7 @@ process makeTranscript {
     set pair_id, file('transcript_*.gtf') into transcripts
  
     """
-    cufflinks --no-update-check -q -p $task.cpus -G $annot $bam_file
+    scif --quiet exec cufflinks cufflinks --no-update-check -q -p $task.cpus -G $annot $bam_file
     mv transcripts.gtf transcript_${pair_id}.gtf
     """
 }
