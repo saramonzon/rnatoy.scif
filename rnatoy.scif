@@ -1,5 +1,7 @@
 %apprun samtools
     exec /usr/bin/samtools "$@"
+%appinstall samtools
+    apt-get update && apt-get install -y samtools
 %apphelp samtools
     This app provides Samtools suite
 %applabels samtools

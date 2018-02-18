@@ -1,8 +1,8 @@
 Bootstrap:docker
-From:pditommaso/dkrbase:1.2
+From:continuumio/miniconda3
 
 #
-# sudo singularity build rnaseq Singularity
+# sudo singularity build rnatoy Singularity
 #
 
 %help
@@ -27,20 +27,24 @@ This is an example for a container that serves samtools, bowtie, and tophat
 
 
 %runscript
-    exec /usr/local/bin/scif "$@"
+    exec /opt/conda/bin/scif "$@"
 
 %files
     rnatoy.scif
-    data
+    helpers.scif
+    nextflow-docker.config
+    nextflow-singularity.config
     
 %post
-    apt-get update --fix-missing && \
-    apt-get install -q -y samtools python && \
-    wget https://bootstrap.pypa.io/get-pip.py && \
-    python get-pip.py
+    # Dependencies
+    apt-get update && apt-get install -y wget \
+                                         unzip \
+                                         apt-utils \
+                                         python      # tophat needs v2.
 
     # Install scif from pypi
-    /usr/local/bin/pip install scif
+    /opt/conda/bin/pip install scif
 
     # Install the filesystem from the recipe
-    scif install /rnatoy.scif
+    /opt/conda/bin/scif install /rnatoy.scif
+    /opt/conda/bin/scif install /helpers.scif

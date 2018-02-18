@@ -80,13 +80,13 @@ sudo singularity build rnatoy Singularity
 ```
 
 # The Scientific Filesystem
-For each of the following examples, we show commands with Docker and with a Singularity container called `rnatoy`
-If we want to interact with our filesystem, we can just run the container:
+For each of the following examples, we show commands with Docker and with a Singularity container called `rnatoy`. If we want to interact with our filesystem, we can just run the container:
 
 ```
 $ docker run vanessa/rnatoy
 $ ./rnatoy
-
+```
+```
 Scientific Filesystem [v0.0.71]
 usage: scif [-h] [--debug] [--quiet] [--writable]
             
@@ -125,6 +125,8 @@ The strength of SCIF is that it will always show you the applications installed 
 ```
 $ docker run vanessa/rnatoy apps
 $ ./rnatoy apps
+```
+```
     bowtie
  cufflinks
     tophat
@@ -133,13 +135,23 @@ nextflow-docker-config
 nextflow-singularity-config
 ```
 
-The last two were installed from [helpers.scif](helpers.scif), and the first two from [rnatoy.scif](rnatoy.scif). We can look at an application in detail.
+The last two were installed from [helpers.scif](helpers.scif), and the first two from [rnatoy.scif](rnatoy.scif). We can look at an application in detail, including asking for help:
 
 ```
 $ docker run vanessa/rnatoy help samtools
+$ ./rnatoy help samtools
+```
+```
     This app provides Samtools suite
+```
 
+and then inspecting
+
+```
 $ docker run vanessa/rnatoy inspect samtools
+$ ./rnatoy inspect samtools
+```
+```
 {
     "samtools": {
         "apprun": [
@@ -164,6 +176,9 @@ environment is sourced, etc.
 
 ```
 $ docker run -it vanessa/rnatoy shell samtools
+$ ./rnatoy shell samtools
+```
+```
 [samtools] executing /bin/bash 
 root@d002e338b88b:/scif/apps/samtools# env | grep PATH
 LD_LIBRARY_PATH=/scif/apps/samtools/lib
@@ -173,7 +188,10 @@ PATH=/scif/apps/samtools/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/
 Notice how I'm in the app's context (in it's application folder) and that it's bin is added to the path? I can also shell in without a specific application context, but still have all the SCIF [global variables](https://sci-f.github.io/spec-v1#environment-namespace) available to me.
 
 ```
-docker run -it vanessa/rnatoy shell
+$ docker run -it vanessa/rnatoy shell
+$ ./rnatoy shell
+```
+```
 WARNING No app selected, will run default ['/bin/bash']
 executing /bin/bash 
 root@055a34619d17:/scif# ls
@@ -184,7 +202,10 @@ data
 The same kind of functionality exists with the python shell, `pyshell`, but you interact directly with the scif client:
 
 ```
-docker run -it vanessa/rnatoy pyshell
+$ docker run -it vanessa/rnatoy pyshell
+$ ./rnatoy pyshell
+```
+```
 Found configurations for 6 scif apps
 cufflinks
 samtools
@@ -207,7 +228,8 @@ Before we get into creating a pipeline, look how easy it is to run an applicatio
 ```
 $ docker run vanessa/rnatoy run samtools
 $ ./rnatoy run samtools
-
+```
+```
 Program: samtools (Tools for alignments in the SAM format)
 Version: 0.1.18 (r982:295)
 
@@ -238,11 +260,14 @@ And executing any command in the context of the application is possible too:
 
 ```
 $ docker run vanessa/rnatoy exec samtools env | grep PATH
+$ ./rnatoy exec samtools env | grep PATH
+```
+```
 LD_LIBRARY_PATH=/scif/apps/samtools/lib
 PATH=/scif/apps/samtools/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ```
 
-Whether we are using Docker or Singularity, the actions going on internally with the scientific filesystem client are the same. Given a simple enough pipeline, we could stop here, and just issue a series of commands to run the different apps.
+Note that for above, you will get more output with the Singularity container, as it shares the environment with the host. Whether we are using Docker or Singularity, the actions going on internally with the scientific filesystem client are the same. Given a simple enough pipeline, we could stop here, and just issue a series of commands to run the different apps.
 
 
 ## Run Using Docker + Scientific Filesystem
@@ -264,8 +289,10 @@ that we know to exist with scif we will map to "data" in the present working dir
 ```
 genome=/scif/data/ggal_1_48850000_49020000.Ggal71.500bpflank.fa
 genomeIndex=${genome}.index
-
+```
+```
 docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec bowtie bowtie2-build --threads 1 $genome $genomeIndex
+singularity run -B $PWD/data/ggal:/scif/data rnatoy exec bowtie bowtie2-build --threads 1 $genome $genomeIndex
 ```
 
 In the above, notice that I am:
@@ -289,8 +316,10 @@ Now let's do the next step, and we will do the same sort of deal. Note I'm not s
 ```
 reads="/scif/data/ggal_gut_1.fq /scif/data/ggal_gut_2.fq /scif/data/ggal_liver_1.fq /scif/data/ggal_liver_2.fq"
 annot=/scif/data/ggal_1_48850000_49020000.bed.gff
-
+```
+```
 docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec tophat tophat2 -p 1 --GTF $annot $genomeIndex $reads
+singularity run -B $PWD/data/ggal:/scif/data rnatoy exec tophat tophat2 -p 1 --output-dir /scif/data --GTF $annot $genomeIndex $reads
 ```
 
 ### Cufflinks
@@ -298,11 +327,14 @@ docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec tophat tophat2 -p 1 
 Finally, this one!
 
 ```
-bam_file=/scif/data/ggal_1_48850000_49020000.bed.gff
+bam_file=/scif/data/unmapped.bam
+```
+```
 docker run -v $PWD/data/ggal:/scif/data vanessa/rnatoy exec cufflinks cufflinks --no-update-check -q -p 1 -G $annot $bam_file
+singularity run -B $PWD/data/ggal:/scif/data rnatoy exec cufflinks cufflinks --no-update-check -q -p 1 -G $annot $bam_file
 ```
 
-I don't think that was right, but I can't spend more time on this! Note that the rest of this description is wrong, I can't figure out for the life of me how Nextflow works. I'm going to try other workflow managers instead.
+I don't think that was right (There are two bam files, accepted_hits and unmapped and I have no idea?), but I can't spend more time on this! Note that the rest of this description is wrong, I can't figure out for the life of me how Nextflow works. I'm going to try other workflow managers instead.
 
 
 # Summary
